@@ -1,6 +1,6 @@
 taskqueue
 
-High precision task scheduler.
+High precision and high performance task scheduler.
 
 ## Example
 
