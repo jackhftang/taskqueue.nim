@@ -9,4 +9,4 @@ srcDir        = "src"
 # Dependencies
 
 requires "nim >= 1.2.0"
-requires "timestamp >= 0.2.0"
+requires "timestamp >= 0.2.3"

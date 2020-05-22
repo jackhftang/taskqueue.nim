@@ -50,34 +50,33 @@ proc runAt*(q: TaskQueue, time: Timestamp, action: Action) =
 #       echo "Some Task"
 #   q.runAt Task(time: time, action: proc() {.gcsafe.} = `body`)
 
-proc runEvery*(q: TaskQueue, firstTime: Timestamp, interval: int64, action: CancelableAction) =
+proc runEvery*(q: TaskQueue, firstTime: Timestamp, interval: Timespan, action: CancelableAction) =
   proc loop() {.gcsafe.} =
     if action(): return
     let d = q.now() - firstTime
-    let n = floorDiv(d, interval)
+    let n = floorDiv(d.i64, interval.i64)
     let target = firstTime + (n+1)*interval
     q.runAt(target, loop)
   q.runAt(firstTime, loop)
 
-template runEvery*(q: TaskQueue, firstTime: Timestamp, interval: int64, body: untyped) =
+template runEvery*(q: TaskQueue, firstTime: Timestamp, interval: Timespan, body: untyped) =
   proc action(): bool {.gcsafe.} =
     `body`
   proc loop() {.gcsafe.} =
     if action(): return
     let d = q.now() - firstTime
-    let n = floorDiv(d, interval)
+    let n = floorDiv(d.i64, interval.i64)
     let target = firstTime + (n+1)*interval
     q.runAt(target, loop)
   q.runAt(firstTime, loop)
 
-
-proc runAround*(q: TaskQueue, firstTime: Timestamp, timespan: int64, action: CancelableAction) =
+proc runAround*(q: TaskQueue, firstTime: Timestamp, timespan: Timespan, action: CancelableAction) =
   proc loop() {.gcsafe.} =
     if action(): return
     q.runAt(q.now() + timespan, loop)
   q.runAt(firstTime, loop)
 
-template runAround*(q: TaskQueue, firstTime: Timestamp, timespan: int64, body: untyped) =
+template runAround*(q: TaskQueue, firstTime: Timestamp, timespan: Timespan, body: untyped) =
   proc action(): bool {.gcsafe.} =
     `body`
   proc loop() {.gcsafe.} =

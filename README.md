@@ -49,7 +49,8 @@ proc main() =
   echo "Maximum Latency (ms): ", latencies[^1]
   echo "Average Latency (ms): ", latencies.foldl(a+b) / N.float
 
-main()
+when isMainModule:
+  main()
 ```
 
 Compile and run

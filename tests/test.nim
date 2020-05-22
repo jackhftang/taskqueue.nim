@@ -65,7 +65,7 @@ suite "taskqueue":
       history.add q.now()
 
     # empty before scheduled time
-    t = startTime + 500*MILLI_SECOND - 1 
+    t = startTime + 500*MILLI_SECOND - NANO_SECOND
     q.process()
     check: history.len == 0
 
@@ -76,7 +76,7 @@ suite "taskqueue":
 
     # recurrent task
     check: q.len == 1
-    t = startTime + 500*MILLI_SECOND + SECOND - 1
+    t = startTime + 500*MILLI_SECOND + SECOND - NANO_SECOND
     q.process()
     check: history.len == 1
     t = startTime + 500*MILLI_SECOND + SECOND
