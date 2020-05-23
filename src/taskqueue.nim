@@ -12,8 +12,6 @@ type
 
   Action* = proc() {.gcsafe.}
 
-  CancelableAction* = proc(): bool {.gcsafe.}
-
   Task = object
     time: Timestamp
     action: Action
@@ -42,46 +40,32 @@ proc runAt*(q: TaskQueue, time: Timestamp, action: Action) =
   ## Schedule a task to run at `time`
   q.runAt Task(time: time, action: action)
 
-proc runEvery*(q: TaskQueue, firstTime: Timestamp, interval: Timespan, action: CancelableAction) =
+
+template runEvery*(q: TaskQueue, firstTime: Timestamp, interval: Timespan, body: untyped) =
   ## Process task at `firstTime` and then 
   ## schedule the next one at *t* = `firstTime` + i * `interval` 
   ## where i is the smallest *whole number* such that *t* is larger than current time.
-  proc loop() {.gcsafe.} =
-    if action(): return
-    let d = q.now() - firstTime
-    let n = floorDiv(d.i64, interval.i64)
-    let target = firstTime + (n+1)*interval
-    q.runAt(target, loop)
-  q.runAt(firstTime, loop)
-
-template runEvery*(q: TaskQueue, firstTime: Timestamp, interval: Timespan, body: untyped) =
-  ## Tempalate version of `runEvery`
-  proc action(): bool {.gcsafe.} =
-    `body`
-  proc loop() {.gcsafe.} =
-    if action(): return
-    let d = q.now() - firstTime
-    let n = floorDiv(d.i64, interval.i64)
-    let target = firstTime + (n+1)*interval
-    q.runAt(target, loop)
-  q.runAt(firstTime, loop)
-
-proc runAround*(q: TaskQueue, firstTime: Timestamp, timespan: Timespan, action: CancelableAction) =
-  ## Process task at `firstTime` and then 
-  ## schedule the next one at `timespan` later than current time.
-  proc loop() {.gcsafe.} =
-    if action(): return
-    q.runAt(q.now() + timespan, loop)
-  q.runAt(firstTime, loop)
+  block:
+    let action = proc(): bool {.gcsafe.} =
+      `body`
+    proc loop() {.gcsafe.} =
+      if action(): return
+      let d = q.now() - firstTime
+      let n = floorDiv(d.i64, interval.i64)
+      let target = firstTime + (n+1)*interval
+      q.runAt(target, loop)
+    q.runAt(firstTime, loop)
 
 template runAround*(q: TaskQueue, firstTime: Timestamp, timespan: Timespan, body: untyped) =
-  ## Template verion of `runAround`
-  proc action(): bool {.gcsafe.} =
-    `body`
-  proc loop() {.gcsafe.} =
-    if action(): return
-    q.runAt(q.now() + timespan, loop)
-  q.runAt(firstTime, loop)
+  ## Process task at `firstTime` and then 
+  ## schedule the next one `timespan` later than current time.
+  block: 
+    let action = proc(): bool {.gcsafe.} = 
+      `body`
+    proc loop() {.gcsafe.} =
+      if action(): return
+      q.runAt(q.now() + timespan, loop)
+    q.runAt(firstTime, loop)
 
 proc len*(q: TaskQueue): int = 
   ## Number of task on queue
@@ -145,8 +129,19 @@ proc exec*(q: TaskQueue) =
   while q.active:
     q.process()
 
-  
-    
-    
-  
 
+# type CancelableAction* = proc(): bool {.gcsafe.}
+
+# proc runEveryProc*(q: TaskQueue, firstTime: Timestamp, interval: Timespan, callback: CancelableAction) =
+#   ## Callback version of `runEvery`
+#   q.runEvery(firstTime, interval):
+#     return callback()
+
+# proc runAroundProc*(q: TaskQueue, firstTime: Timestamp, timespan: Timespan, callback: CancelableAction) =
+#   ## Callback version of `runAroundProc`
+#   # q.runAround(firstTime, timespan):
+#   #   result = callback()
+#   proc loop() {.gcsafe.} =
+#     if callback(): return
+#     q.runAt(q.now() + timespan, loop)
+#   q.runAt(firstTime, loop)
