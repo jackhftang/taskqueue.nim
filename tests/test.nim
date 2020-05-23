@@ -1,5 +1,6 @@
 import unittest
 import taskqueue
+import asyncdispatch
 
 template testScoped(name: string, body: untyped): untyped =
   test `name`:
@@ -55,37 +56,128 @@ suite "taskqueue":
     check: q.len == 0
 
   testScoped "runEvery()":
-    let startTime = initTimestamp(0)
-    var t = startTime
+    # define times
+    let t0 = initTimestamp(0)
+    let t1 = t0 + 500*MILLI_SECOND
+    let t2 = t1 + SECOND
+    let t3 = t2 + SECOND
+
+    var t = t0
     let q = newTaskQueue()
     q.now = proc(): Timestamp = t
 
     var history: seq[Timestamp]
-    q.runEvery startTime + 500*MILLI_SECOND, SECOND:
+    q.runEvery t1, SECOND:
       history.add q.now()
+      # 10ms process time
+      t = t + 10*MILLI_SECOND 
+      
 
-    # empty before scheduled time
-    t = startTime + 500*MILLI_SECOND - NANO_SECOND
+    # before start time
+    t = t1 - NANO_SECOND
     q.process()
     check: history.len == 0
 
-    # process at schedule time
-    t = startTime + 500*MILLI_SECOND
+    # at start time
+    t = t1
     q.process()
-    check: history == @[startTime + 500*MILLI_SECOND]
-
-    # recurrent task
+    check: history == @[t1]
     check: q.len == 1
-    t = startTime + 500*MILLI_SECOND + SECOND - NANO_SECOND
+
+    # before 1st recurrent time
+    t = t2 - NANO_SECOND
     q.process()
     check: history.len == 1
-    t = startTime + 500*MILLI_SECOND + SECOND
-    q.process()
-    check: history == @[
-      startTime + 500*MILLI_SECOND, 
-      startTime + 500*MILLI_SECOND + SECOND
-    ]
-    check: q.len == 1
-    
 
+    # at 1st recurrent time
+    t = t2
+    q.process()
+    check: history == @[t1, t2]
+    check: q.len == 1
+
+    # before 2nd recurrent time
+    t = t3 - NANO_SECOND
+    q.process()
+    check: history == @[t1, t2]
+    check: q.len == 1
+
+    # at 2nd recurrent time
+    t = t3
+    q.process()
+    check: history == @[t1, t2, t3]
+    check: q.len == 1
+  
+  testScoped "runAround()":
+    # define times
+    let t0 = initTimestamp(0)
+    let t1 = t0 + 500*MILLI_SECOND
+    let t2 = t1 + SECOND
+    let t3 = t2 + SECOND
+    let pt = 10*MILLI_SECOND
+
+    var t = t0
+    let q = newTaskQueue()
+    q.now = proc(): Timestamp = t
+
+    var history: seq[Timestamp]
+    q.runAround t1, SECOND:
+      history.add q.now()
+      t = t + pt
+
+    # before startTime
+    t = t1 - NANO_SECOND
+    q.process()
+    check: history.len == 0
+
+    # at startTime
+    t = t1
+    q.process()
+    check: history == @[t1]
+    check: q.len == 1
+
+    # before 1st recurrent time
+    t = t2 + pt - NANO_SECOND
+    q.process()
+    check: history == @[t1]
+    check: q.len == 1
+
+    # at 1st recurrent time
+    t = t2 + pt
+    q.process()
+    check: history == @[t1, t2+pt]
+    check: q.len == 1
+
+    # # before 2nd recurrent time
+    t = t3 + 2*pt - NANO_SECOND
+    q.process()
+    check: history == @[t1, t2+pt]
+    check: q.len == 1
+
+    # at 2nd recurrent time
+    t = t3 + 2*pt
+    q.process()
+    check: history == @[t1, t2+pt, t3+2*pt]
+    check: q.len == 1
+
+  testScoped "exec() and stop()":
+    let q = newTaskQueue()
+    var called = false
+    q.runAt q.now() + 500*MICRO_SECOND:
+      q.stop()
+      called = true
+    q.exec()
+    assert called
+
+  testScoped "poll() and stop()":
+    let q = newTaskQueue()
+    var called = false
+    q.runAt q.now() + 500*MICRO_SECOND:
+      q.stop()
+      called = true
+    waitFor q.poll()
+    assert called
+
+
+    
+    
     

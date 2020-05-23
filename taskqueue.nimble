@@ -2,7 +2,7 @@
 
 version       = "0.1.0"
 author        = "Jack Tang"
-description   = "A new awesome nimble package"
+description   = "High precision and high performance task scheduler"
 license       = "MIT"
 srcDir        = "src"
 
