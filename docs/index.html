@@ -105,8 +105,6 @@ function main() {
   taskQueue: TaskQueue"><wbr />No<wbr />Task<wbr />Error<span class="attachedType"></span></a></li>
   <li><a class="reference" href="#Action"
     title="Action = proc () {.gcsafe.}"><wbr />Action<span class="attachedType"></span></a></li>
-  <li><a class="reference" href="#CancelableAction"
-    title="CancelableAction = proc (): bool {.gcsafe.}"><wbr />Cancelable<wbr />Action<span class="attachedType"></span></a></li>
   <li><a class="reference" href="#TaskQueue"
     title="TaskQueue = ref object
   active: bool
@@ -124,12 +122,6 @@ function main() {
     title="newTaskQueue(): TaskQueue"><wbr />new<wbr />Task<wbr />Queue<span class="attachedType">TaskQueue</span></a></li>
   <li><a class="reference" href="#runAt%2CTaskQueue%2CTimestamp%2CAction"
     title="runAt(q: TaskQueue; time: Timestamp; action: Action)"><wbr />run<wbr />At<span class="attachedType">TaskQueue</span></a></li>
-  <li><a class="reference" href="#runEvery%2CTaskQueue%2CTimestamp%2CTimespan%2CCancelableAction"
-    title="runEvery(q: TaskQueue; firstTime: Timestamp; interval: Timespan;
-         action: CancelableAction)"><wbr />run<wbr />Every<span class="attachedType">TaskQueue</span></a></li>
-  <li><a class="reference" href="#runAround%2CTaskQueue%2CTimestamp%2CTimespan%2CCancelableAction"
-    title="runAround(q: TaskQueue; firstTime: Timestamp; timespan: Timespan;
-          action: CancelableAction)"><wbr />run<wbr />Around<span class="attachedType">TaskQueue</span></a></li>
   <li><a class="reference" href="#len%2CTaskQueue"
     title="len(q: TaskQueue): int"><wbr />len<span class="attachedType">TaskQueue</span></a></li>
   <li><a class="reference" href="#nextTaskTime%2CTaskQueue"
@@ -184,13 +176,6 @@ function main() {
 
 
 </dd>
-<a id="CancelableAction"></a>
-<dt><pre><a href="taskqueue.html#CancelableAction"><span class="Identifier">CancelableAction</span></a> <span class="Other">=</span> <span class="Keyword">proc</span> <span class="Other">(</span><span class="Other">)</span><span class="Other">:</span> <span class="Identifier">bool</span> <span><span class="Other">{</span><span class="Other pragmadots">...</span><span class="Other">}</span></span><span class="pragmawrap"><span class="Other">{.</span><span class="pragma"><span class="Identifier">gcsafe</span></span><span class="Other">.}</span></span></pre></dt>
-<dd>
-
-
-
-</dd>
 <a id="TaskQueue"></a>
 <dt><pre><a href="taskqueue.html#TaskQueue"><span class="Identifier">TaskQueue</span></a> <span class="Other">=</span> <span class="Keyword">ref</span> <span class="Keyword">object</span>
   <span class="Identifier">active</span><span class="Other">:</span> <span class="Identifier">bool</span>
@@ -226,22 +211,6 @@ Create a new Task Scheduler
 <dd>
 
 Schedule a task to run at <tt class="docutils literal"><span class="pre">time</span></tt>
-
-</dd>
-<a id="runEvery,TaskQueue,Timestamp,Timespan,CancelableAction"></a>
-<dt><pre><span class="Keyword">proc</span> <a href="#runEvery%2CTaskQueue%2CTimestamp%2CTimespan%2CCancelableAction"><span class="Identifier">runEvery</span></a><span class="Other">(</span><span class="Identifier">q</span><span class="Other">:</span> <a href="taskqueue.html#TaskQueue"><span class="Identifier">TaskQueue</span></a><span class="Other">;</span> <span class="Identifier">firstTime</span><span class="Other">:</span> <span class="Identifier">Timestamp</span><span class="Other">;</span> <span class="Identifier">interval</span><span class="Other">:</span> <span class="Identifier">Timespan</span><span class="Other">;</span>
-             <span class="Identifier">action</span><span class="Other">:</span> <a href="taskqueue.html#CancelableAction"><span class="Identifier">CancelableAction</span></a><span class="Other">)</span> <span><span class="Other">{</span><span class="Other pragmadots">...</span><span class="Other">}</span></span><span class="pragmawrap"><span class="Other">{.</span><span class="pragma"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Identifier">Exception</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Identifier">RootEffect</span><span class="Other">]</span></span><span class="Other">.}</span></span></pre></dt>
-<dd>
-
-Process task at <tt class="docutils literal"><span class="pre">firstTime</span></tt> and then schedule the next one at <em>t</em> = <tt class="docutils literal"><span class="pre">firstTime</span></tt> + i * <tt class="docutils literal"><span class="pre">interval</span></tt> where i is the smallest <em>whole number</em> such that <em>t</em> is larger than current time.
-
-</dd>
-<a id="runAround,TaskQueue,Timestamp,Timespan,CancelableAction"></a>
-<dt><pre><span class="Keyword">proc</span> <a href="#runAround%2CTaskQueue%2CTimestamp%2CTimespan%2CCancelableAction"><span class="Identifier">runAround</span></a><span class="Other">(</span><span class="Identifier">q</span><span class="Other">:</span> <a href="taskqueue.html#TaskQueue"><span class="Identifier">TaskQueue</span></a><span class="Other">;</span> <span class="Identifier">firstTime</span><span class="Other">:</span> <span class="Identifier">Timestamp</span><span class="Other">;</span> <span class="Identifier">timespan</span><span class="Other">:</span> <span class="Identifier">Timespan</span><span class="Other">;</span>
-              <span class="Identifier">action</span><span class="Other">:</span> <a href="taskqueue.html#CancelableAction"><span class="Identifier">CancelableAction</span></a><span class="Other">)</span> <span><span class="Other">{</span><span class="Other pragmadots">...</span><span class="Other">}</span></span><span class="pragmawrap"><span class="Other">{.</span><span class="pragma"><span class="Identifier">raises</span><span class="Other">:</span> <span class="Other">[</span><span class="Identifier">Exception</span><span class="Other">]</span><span class="Other">,</span> <span class="Identifier">tags</span><span class="Other">:</span> <span class="Other">[</span><span class="Identifier">RootEffect</span><span class="Other">]</span></span><span class="Other">.}</span></span></pre></dt>
-<dd>
-
-Process task at <tt class="docutils literal"><span class="pre">firstTime</span></tt> and then schedule the next one at <tt class="docutils literal"><span class="pre">timespan</span></tt> later than current time.
 
 </dd>
 <a id="len,TaskQueue"></a>
@@ -310,7 +279,7 @@ Stop <tt class="docutils literal"><span class="pre">poll()</span></tt> or <tt cl
 <dt><pre><span class="Keyword">template</span> <a href="#runEvery.t%2CTaskQueue%2CTimestamp%2CTimespan%2Cuntyped"><span class="Identifier">runEvery</span></a><span class="Other">(</span><span class="Identifier">q</span><span class="Other">:</span> <a href="taskqueue.html#TaskQueue"><span class="Identifier">TaskQueue</span></a><span class="Other">;</span> <span class="Identifier">firstTime</span><span class="Other">:</span> <span class="Identifier">Timestamp</span><span class="Other">;</span> <span class="Identifier">interval</span><span class="Other">:</span> <span class="Identifier">Timespan</span><span class="Other">;</span> <span class="Identifier">body</span><span class="Other">:</span> <span class="Identifier">untyped</span><span class="Other">)</span></pre></dt>
 <dd>
 
-Tempalate version of <tt class="docutils literal"><span class="pre">runEvery</span></tt>
+Process task at <tt class="docutils literal"><span class="pre">firstTime</span></tt> and then schedule the next one at <em>t</em> = <tt class="docutils literal"><span class="pre">firstTime</span></tt> + i * <tt class="docutils literal"><span class="pre">interval</span></tt> where i is the smallest <em>whole number</em> such that <em>t</em> is larger than current time.
 
 </dd>
 <a id="runAround.t,TaskQueue,Timestamp,Timespan,untyped"></a>
@@ -318,7 +287,7 @@ Tempalate version of <tt class="docutils literal"><span class="pre">runEvery</sp
                   <span class="Identifier">body</span><span class="Other">:</span> <span class="Identifier">untyped</span><span class="Other">)</span></pre></dt>
 <dd>
 
-Template verion of <tt class="docutils literal"><span class="pre">runAround</span></tt>
+Process task at <tt class="docutils literal"><span class="pre">firstTime</span></tt> and then schedule the next one <tt class="docutils literal"><span class="pre">timespan</span></tt> later than current time.
 
 </dd>
 
@@ -331,7 +300,7 @@ Template verion of <tt class="docutils literal"><span class="pre">runAround</spa
       <div class="twelve-columns footer">
         <span class="nim-sprite"></span>
         <br/>
-        <small style="color: var(--hint);">Made with Nim. Generated: 2020-05-23 07:06:44 UTC</small>
+        <small style="color: var(--hint);">Made with Nim. Generated: 2020-05-23 08:54:32 UTC</small>
       </div>
     </div>
   </div>
