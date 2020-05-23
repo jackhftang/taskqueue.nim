@@ -1,12 +1,16 @@
 # Taskqueue.nim
 
-High precision and high performance task scheduler.
+High precision and high performance task scheduler
 
 ## Installation
 
 ```
 $ nimble install taskqueue
 ```
+
+## API
+
+see [here](https://jackhftang.github.io/taskqueue.nim/)
 
 ## Example
 
@@ -198,6 +202,7 @@ when isMainModule:
 
 `runAround` schedules the first task at `startTime`. And every time after running the task, it re-schedules the task at current time + `interval`. The scheduled time will drift with system real time. Common use case is like running a health check every seconds.
 
+Example:
 
 ```nim
 import taskqueue
