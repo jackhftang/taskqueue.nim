@@ -1,5 +1,4 @@
 import taskqueue
-import asyncdispatch
 
 proc main() =
   let q = newTaskQueue()
