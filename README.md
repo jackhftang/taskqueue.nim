@@ -1,14 +1,18 @@
-taskqueue
+# Taskqueue.nim
 
 High precision and high performance task scheduler.
+
+## Installation
+
+```
+$ nimble install taskqueue
+```
 
 ## Example
 
 Measure the latency of scheduled tasks. 
 
 ```nim
-# main.nim
-
 import taskqueue
 import algorithm
 import sequtils
@@ -21,17 +25,20 @@ proc main() =
   # define T as referenced time
   let T = q.now()
 
-  # schedler N tasks
+  # schedler N tasks at M interval.
+  # take N * M = 10 second to run
   let N = 10000
+  let M = MILLI_SECOND
+
   var latencies = newSeqOfCap[float](N)
   for i in 1..N:
-    let targetTime = T + i * MILLI_SECOND
-    capture targetTime:
+    capture i:
+      let targetTime = T + i * M
       q.runAt targetTime:
-        latencies.add q.now().inMilliSecond - targetTime.inMilliSecond 
+        latencies.add (q.now() - targetTime).inMilliSecond 
 
   # scheduler to stop scheduler
-  q.runAt T + (N+1) * MILLI_SECOND:
+  q.runAt T + (N+1) * M:
     q.stop()
 
   # run in tight loop
@@ -59,7 +66,7 @@ Compile and run
 nim c -d:release -d:danger main.nim && sudo nice -n -20 ./main
 ```
 
-One result on my unix machine (`now()` internally use `clock_gettime()` with `CLOCK_REALTIME` on unix). 
+One result on my unix machine which use `clock_gettime()` with `CLOCK_REALTIME`. 
 
 ```
 Number of Triggers: 10000
@@ -73,11 +80,15 @@ Maximum Latency (ms): 0.03125
 Average Latency (ms): 0.000910693359375
 ```
 
-## Patterns
+## Usage
 
-### Lower CPU with timer
+There are two ways to run a `taskQueue` currently (may use high resolution timer if os support in the future).
 
-`exec()` run in a tight loop, which consume near 100% CPU. If a lower precision is acceptable, `poll()` can be used instead. 
+- `exec()` will run in a while loop. It is recommended to run in another thread. FYI, see my another [project](https://github.com/jackhftang/threadproxy.nim) =].
+
+- `poll()` use *addTimer* in asyncdispatch. 
+
+Example:
 
 ```nim
 import taskqueue
@@ -85,50 +96,130 @@ import asyncdispatch
 
 proc main() =
   let q = newTaskQueue()
-  q.runAt q.now() + 3*SECOND:
-    echo "do something and exit"
+
+  # schedule to stop q 500ms later
+  let startTime = q.now()
+  q.runAt startTime + 500*MILLI_SECOND:
+    let endTime = q.now()
+    let diff = (endTime -  startTime).inMilliSecond
+    echo "endTime - startTime = ", diff, "ms"
     q.stop()
 
   # call process periodically
   waitFor q.poll()
 
-main()
+when isMainModule:
+  main()
 ```
 
 ### External Clock
 
-Sometimes it is needed to synchronize with other source of time instead of system time. You can override it with `now=`.
+TaskQueue internal clock can be overriden by `now=`.
+
+Example:
 
 ```
 import taskqueue
-import asyncdispatch 
 
 proc main() =
-  # My global synchronized clock
-  var myTime = initTimestamp()
+  # global logical clock
+  var logicalTime = initTimestamp()
 
   # synchronize logical time of two taskqueues
   let q1 = newTaskQueue()
   let q2 = newTaskQueue()
-  q1.now = proc(): Timestamp = myTime 
-  q2.now = proc(): Timestamp = myTime
+  q1.now = proc(): Timestamp = logicalTime 
+  q2.now = proc(): Timestamp = logicalTime
   
   # schedule to trigger at *logically same* time 
-  let target = myTime + 50*MILLI_SECOND
+  let target = logicalTime + 50*MILLI_SECOND
   echo "Target time is ", target
   q1.runAt target:
-    echo "Current time is ", initTimestamp(), ". q1 see is ", q1.now()
+    echo "q1: Current time is ", initTimestamp(), " Logical time is ", q1.now()
   q2.runAt target:
-    echo "Current time is ", initTimestamp(), ". q2 see is ", q2.now()
+    echo "q2: Current time is ", initTimestamp(), " Logical time is ", q2.now()
 
-  while myTime < target + 50*MILLI_SECOND:
-    myTime = initTimestamp()
-    q1.process(myTime)
-    q2.process(myTime)
 
-main()
+  while logicalTime < target:
+    logicalTime = initTimestamp()
+
+    # process at logical time 
+    q1.process(logicalTime)
+    q2.process(logicalTime)
+
+
+when isMainModule:
+  main()
 ```
 
 ### Recurrant Task 
 
-    
+There are two variants for running recurrent tasks. They have the same signature, but the handling of resheduling the recurrence is subtly different. 
+
+#### runEvery
+
+`runEvery(startTime: Timestamp, interval: Timespan, action: CancelableAction)` 
+
+`runEvery` schedules the first task at `startTime`. And every time after running the task, it re-schedules the task at `startTime` + n * `interval` in nearest future where n is a whole number.
+
+System real time could be adjusted from time to time (e.g. NTP). The re-scheduled time is independent of system time. `runEvery` is immune to hardware clock drift. Common use case is like scheduling a task to run at 12:00pm sharp everyday. 
+
+Rescheduling can be canceled by return a `true` in action.
+
+Example:
+
+```
+import taskqueue
+
+proc main() =
+  let q = newTaskQueue()
+
+  let startTime = q.now() # run immediately
+
+  const N = 1000
+  var cnt = 0
+  q.runEvery startTime, MILLI_SECOND:
+    # see how it drift away
+    echo cnt, " ", (q.now() - startTime).inMilliSecond 
+    cnt.inc
+
+    # repeat N times and stop
+    if cnt >= N: q.stop()
+
+  q.exec()
+
+when isMainModule:
+  main()
+```
+
+#### runAround    
+
+`runAround(startTime: Timestamp, interval: Timespan, action: CancelableAction)` 
+
+`runAround` schedules the first task at `startTime`. And every time after running the task, it re-schedules the task at current time + `interval`. The scheduled time will drift with system real time. Common use case is like running a health check every seconds.
+
+
+```nim
+import taskqueue
+import asyncdispatch
+
+proc main() =
+  let q = newTaskQueue()
+
+  let startTime = q.now() # run immediately
+
+  const N = 1000
+  var cnt = 0
+  q.runAround startTime, MILLI_SECOND:
+    # see how it drift away
+    echo cnt, " ", (q.now() - startTime).inMilliSecond 
+    cnt.inc
+
+    # repeat N times and stop
+    if cnt >= N: q.stop()
+
+  q.exec()
+
+when isMainModule:
+  main()
+```

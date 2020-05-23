@@ -138,7 +138,7 @@ proc poll*(q: TaskQueue, interval: int = 16): Future[void] =
   addTimer(interval, true, loop)
     
 proc exec*(q: TaskQueue) =
-  ## Run `process()` in a tight loop until `stop()` is called.
+  ## Run `process()` in a while loop until `stop()` is called.
   ## 
   ## This procedure **blocks**, run in other thread if needed.
   q.active = true
