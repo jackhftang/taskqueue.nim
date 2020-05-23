@@ -156,7 +156,7 @@ when isMainModule:
   main()
 ```
 
-### Recurrant Task 
+### Recurrent Task 
 
 There are two variants for running recurrent tasks. They have the same signature, but the handling of resheduling the recurrence is subtly different. 
 
