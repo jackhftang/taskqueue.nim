@@ -129,6 +129,13 @@ proc exec*(q: TaskQueue) =
   while q.active:
     q.process()
 
+proc execRelaxed*(q: TaskQueue) =
+  q.active = true
+  while q.active:
+    if q.queue.len > 0:
+      q.process()
+    else:
+      cpuRelax()
 
 # type CancelableAction* = proc(): bool {.gcsafe.}
 
